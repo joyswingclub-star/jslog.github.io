@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JoyswingLog</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- React & ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Babel (JSX Transformer) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    /* Google Sitesのiframe内でのスクロールバー調整 */
+    body {
+      background-color: #f8fafc; /* bg-slate-50 */
+      overflow-y: auto;
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    }
+    /* アニメーション定義 */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in-up {
+      animation: fadeInUp 0.3s ease-out forwards;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+    
+    // --- アイコン定義 (Lucide React依存を排除し、インラインSVG化) ---
+    const IconBase = ({ size = 24, className = "", children, ...props }) => (
+      <svg 
+        xmlns="http://www.w3.org/2000/svg" 
+        width={size} 
+        height={size} 
+        viewBox="0 0 24 24" 
+        fill="none" 
+        stroke="currentColor" 
+        strokeWidth="2" 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+        className={className} 
+        {...props}
+      >
+        {children}
+      </svg>
+    );
+
+    const Trophy = (props) => (
+      <IconBase {...props}>
+        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+        <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+        <path d="M4 22h16" />
+        <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+        <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+        <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+      </IconBase>
+    );
+    const Calendar = (props) => (
+      <IconBase {...props}>
+        <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+        <line x1="16" x2="16" y1="2" y2="6" />
+        <line x1="8" x2="8" y1="2" y2="6" />
+        <line x1="3" x2="21" y1="10" y2="10" />
+      </IconBase>
+    );
+    const Users = (props) => (
+      <IconBase {...props}>
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </IconBase>
+    );
+    const X = (props) => (
+      <IconBase {...props}>
+        <path d="M18 6 6 18" />
+        <path d="m6 6 12 12" />
+      </IconBase>
+    );
+    const TrendingUp = (props) => (
+      <IconBase {...props}>
+        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+        <polyline points="17 6 23 6 23 12" />
+      </IconBase>
+    );
+    const BarChart2 = (props) => (
+      <IconBase {...props}>
+        <line x1="18" x2="18" y1="20" y2="10" />
+        <line x1="12" x2="12" y1="20" y2="4" />
+        <line x1="6" x2="6" y1="20" y2="14" />
+      </IconBase>
+    );
+    const ChevronDown = (props) => (
+      <IconBase {...props}>
+        <path d="m6 9 6 6 6-6" />
+      </IconBase>
+    );
+    const ArrowUp = (props) => (
+      <IconBase {...props}>
+        <path d="m5 12 7-7 7 7" />
+        <path d="M12 19V5" />
+      </IconBase>
+    );
+    const ArrowDown = (props) => (
+      <IconBase {...props}>
+        <path d="M12 5v14" />
+        <path d="m19 12-7 7-7-7" />
+      </IconBase>
+    );
+    const Minus = (props) => (
+      <IconBase {...props}>
+        <path d="M5 12h14" />
+      </IconBase>
+    );
+    const List = (props) => (
+      <IconBase {...props}>
+        <line x1="8" x2="21" y1="6" y2="6" />
+        <line x1="8" x2="21" y1="12" y2="12" />
+        <line x1="8" x2="21" y1="18" y2="18" />
+        <line x1="3" x2="3.01" y1="6" y2="6" />
+        <line x1="3" x2="3.01" y1="12" y2="12" />
+        <line x1="3" x2="3.01" y1="18" y2="18" />
+      </IconBase>
+    );
+    const User = (props) => (
+      <IconBase {...props}>
+        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+      </IconBase>
+    );
+    const MapPin = (props) => (
+      <IconBase {...props}>
+        <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+        <circle cx="12" cy="10" r="3" />
+      </IconBase>
+    );
+
+    // --- コンポーネント ---
+    const Card = ({ children, className = "" }) => (
+      <div className={`bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden ${className}`}>
+        {children}
+      </div>
+    );
+
+    const SimpleLineChart = ({ data, width = 600, height = 200 }) => {
+      if (!data || data.length === 0) return <div className="text-center text-slate-400 p-10">データがありません</div>;
+
+      const padding = 40;
+      const chartWidth = width - padding * 2;
+      const chartHeight = height - padding * 2;
+
+      const maxScore = Math.max(...data.map(d => d.value)) + 5;
+      const minScore = Math.min(...data.map(d => d.value)) - 5;
+      const range = maxScore - minScore || 10;
+
+      const points = data.map((d, i) => {
+        const x = padding + (i / (data.length - 1 || 1)) * chartWidth;
+        const y = padding + chartHeight - ((d.value - minScore) / range) * chartHeight;
+        return { x, y, ...d };
+      });
+
+      const pathD = points.length > 1 
+        ? `M ${points[0].x} ${points[0].y} ` + points.slice(1).map(p => `L ${p.x} ${p.y}`).join(' ')
+        : '';
+
+      return (
+        <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
+          <line x1={padding} y1={padding} x2={padding} y2={height - padding} stroke="#e2e8f0" strokeWidth="1" />
+          <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="#e2e8f0" strokeWidth="1" />
+          {points.length > 1 && (
+            <path d={pathD} fill="none" stroke="#059669" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+          )}
+          {points.map((p, i) => (
+            <g key={i}>
+              <circle cx={p.x} cy={p.y} r="5" fill="white" stroke="#059669" strokeWidth="2" />
+              <text x={p.x} y={p.y - 12} textAnchor="middle" fontSize="12" fill="#059669" fontWeight="bold">{p.value}</text>
+              <text x={p.x} y={height - padding + 20} textAnchor="middle" fontSize="10" fill="#64748b">{p.label}</text>
+            </g>
+          ))}
+          <text x={padding - 10} y={padding} textAnchor="end" fontSize="10" fill="#94a3b8">{maxScore}</text>
+          <text x={padding - 10} y={height - padding} textAnchor="end" fontSize="10" fill="#94a3b8">{minScore}</text>
+        </svg>
+      );
+    };
+
+    // 順位用チャート（値が小さいほど上に表示）
+    const RankLineChart = ({ data, width = 600, height = 200 }) => {
+      if (!data || data.length === 0) return <div className="text-center text-slate-400 p-10">データがありません</div>;
+
+      const padding = 40;
+      const chartWidth = width - padding * 2;
+      const chartHeight = height - padding * 2;
+
+      // 順位なので1位が最小かつ最高
+      const minRank = 1; 
+      const maxRank = Math.max(...data.map(d => d.value)) + 1;
+      const range = maxRank - minRank || 10;
+
+      const points = data.map((d, i) => {
+        const x = padding + (i / (data.length - 1 || 1)) * chartWidth;
+        // 1位(minRank)が上(y=padding)、下位(maxRank)が下(y=padding+chartHeight)
+        const y = padding + ((d.value - minRank) / range) * chartHeight;
+        return { x, y, ...d };
+      });
+
+      const pathD = points.length > 1 
+        ? `M ${points[0].x} ${points[0].y} ` + points.slice(1).map(p => `L ${p.x} ${p.y}`).join(' ')
+        : '';
+
+      return (
+        <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
+          <line x1={padding} y1={padding} x2={padding} y2={height - padding} stroke="#e2e8f0" strokeWidth="1" />
+          <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="#e2e8f0" strokeWidth="1" />
+          
+          {points.length > 1 && (
+            <path d={pathD} fill="none" stroke="#f59e0b" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+          )}
+
+          {points.map((p, i) => (
+            <g key={i}>
+              <circle cx={p.x} cy={p.y} r="5" fill="white" stroke="#f59e0b" strokeWidth="2" />
+              <text x={p.x} y={p.y - 12} textAnchor="middle" fontSize="12" fill="#f59e0b" fontWeight="bold">{p.value}位</text>
+              <text x={p.x} y={height - padding + 20} textAnchor="middle" fontSize="10" fill="#64748b">{p.label}</text>
+            </g>
+          ))}
+          
+          <text x={padding - 10} y={padding} textAnchor="end" fontSize="10" fill="#94a3b8">1位</text>
+          <text x={padding - 10} y={height - padding} textAnchor="end" fontSize="10" fill="#94a3b8">{maxRank}位</text>
+        </svg>
+      );
+    };
+
+    const PlayerStatsModal = ({ isOpen, onClose, playerName, allTournaments }) => {
+      if (!isOpen || !playerName) return null;
+      
+      const playerHistory = allTournaments.map(t => {
+        const player = t.players.find(p => p.name === playerName);
+        return player ? { 
+          label: t.date.substring(2).replace(/-/g, '/'),
+          fullDate: t.date,
+          name: t.name,
+          value: player.gross, // スコア用
+          rank: player.rank    // 順位用
+        } : null;
+      }).filter(Boolean).reverse();
+
+      // 順位用データ
+      const rankHistory = playerHistory.map(h => ({ ...h, value: h.rank }));
+
+      const bestScore = Math.min(...playerHistory.map(p => p.value));
+      const avgScore = Math.round(playerHistory.reduce((acc, cur) => acc + cur.value, 0) / playerHistory.length);
+
+      return (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden animate-fade-in-up max-h-[90vh] flex flex-col">
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 flex-shrink-0">
+              <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
+                <TrendingUp size={20} className="text-emerald-600" />
+                {playerName} さんの成績推移
+              </h3>
+              <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+            </div>
+            <div className="p-6 overflow-y-auto">
+              <div className="flex gap-4 mb-6">
+                <div className="flex-1 bg-emerald-50 p-4 rounded-xl text-center"><span className="text-xs font-bold text-emerald-800 uppercase block mb-1">平均グロス</span><span className="text-2xl font-bold text-emerald-600">{avgScore}</span></div>
+                <div className="flex-1 bg-amber-50 p-4 rounded-xl text-center"><span className="text-xs font-bold text-amber-800 uppercase block mb-1">ベストグロス</span><span className="text-2xl font-bold text-amber-600">{bestScore}</span></div>
+                <div className="flex-1 bg-slate-50 p-4 rounded-xl text-center"><span className="text-xs font-bold text-slate-600 uppercase block mb-1">参加回数</span><span className="text-2xl font-bold text-slate-700">{playerHistory.length}</span></div>
+              </div>
+              
+              <div className="mb-2 text-sm font-bold text-slate-700 flex items-center gap-2"><BarChart2 size={16} className="text-emerald-600"/> グロススコア推移</div>
+              <div className="bg-white border border-slate-100 rounded-xl p-4 h-64 flex items-center justify-center mb-8">
+                <SimpleLineChart data={playerHistory} height={200} />
+              </div>
+
+              <div className="mb-2 text-sm font-bold text-slate-700 flex items-center gap-2"><Trophy size={16} className="text-amber-500"/> 順位推移</div>
+              <div className="bg-white border border-slate-100 rounded-xl p-4 h-64 flex items-center justify-center">
+                <RankLineChart data={rankHistory} height={200} />
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // --- メインアプリケーション ---
+    function App() {
+      // ★★★ データを固定して公開する場合は、ここを修正してください ★★★
+      // 実データを使う場合は、以下のように書き換えてください。
+      const initialData = [
+        {
+  id: "joy_swing_74",
+  name: "第74回　ジョイスイング倶楽部コンペ",
+  date: "2025-12-07",
+  course: "JGM笠間ゴルフクラブ",
+  players: [
+    { id: "74_1", rank: 1, name: "須藤 はんと", gross: 66, hcp: 0.0, net: 66.0 },
+    { id: "74_2", rank: 2, name: "根本 空", gross: 102, hcp: 36.0, net: 66.0 },
+    { id: "74_3", rank: 3, name: "村井 篤史", gross: 77, hcp: 9.0, net: 68.0 },
+    { id: "74_4", rank: 4, name: "野澤 文乃", gross: 85, hcp: 14.0, net: 71.0 },
+    { id: "74_5", rank: 5, name: "田中 瞳", gross: 94, hcp: 22.0, net: 72.0 },
+    { id: "74_6", rank: 6, name: "吉田 裕稀也", gross: 89, hcp: 14.0, net: 75.0 },
+    { id: "74_7", rank: 7, name: "別宮 史隆", gross: 87, hcp: 11.0, net: 76.0 },
+    { id: "74_8", rank: 8, name: "倉田 義和", gross: 92, hcp: 16.0, net: 76.0 },
+    { id: "74_9", rank: 9, name: "庵原 京子", gross: 93, hcp: 17.0, net: 76.0 },
+    { id: "74_10", rank: 10, name: "須藤 典久", gross: 87, hcp: 10.0, net: 77.0 },
+    { id: "74_11", rank: 10, name: "窪田 竜也", gross: 87, hcp: 10.0, net: 77.0 },
+    { id: "74_12", rank: 12, name: "森川 和人", gross: 104, hcp: 27.0, net: 77.0 },
+    { id: "74_13", rank: 13, name: "須藤 裕一", gross: 100, hcp: 20.0, net: 80.0 },
+    { id: "74_14", rank: 14, name: "大住 一嘉", gross: 98, hcp: 17.0, net: 81.0 },
+    { id: "74_15", rank: 15, name: "矢口 修三", gross: 101, hcp: 20.0, net: 81.0 },
+    { id: "74_16", rank: 16, name: "東平 安夫", gross: 94, hcp: 12.0, net: 82.0 },
+    { id: "74_17", rank: 17, name: "大塚 直樹", gross: 100, hcp: 18.0, net: 82.0 },
+    { id: "74_18", rank: 18, name: "村井 楽", gross: 102, hcp: 20.0, net: 82.0 },
+    { id: "74_19", rank: 19, name: "上林 好一", gross: 110, hcp: 28.0, net: 82.0 },
+    { id: "74_20", rank: 20, name: "渋谷 容市", gross: 93, hcp: 10.0, net: 83.0 },
+    { id: "74_21", rank: 21, name: "新居 正樹", gross: 105, hcp: 21.0, net: 84.0 },
+    { id: "74_22", rank: 22, name: "桧山 研二", gross: 110, hcp: 20.0, net: 90.0 },
+    { id: "74_23", rank: 23, name: "望月 貴彦", gross: 102, hcp: 11.0, net: 91.0 }
+  ]
+},
+
+        {
+  id: "joy_swing_73",
+  name: "第73回　ジョイスイング倶楽部コンペ",
+  date: "2025-09-14",
+  course: "JGM笠間ゴルフクラブ",
+  players: [
+    { id: "73_1", rank: 1, name: "野澤 文乃", gross: 85, hcp: 20.0, net: 65.0 },
+    { id: "73_2", rank: 2, name: "東平 安夫", gross: 83, hcp: 12.0, net: 71.0 },
+    { id: "73_3", rank: 3, name: "窪田 竜也", gross: 86, hcp: 15.0, net: 71.0 },
+    { id: "73_4", rank: 4, name: "田中 瞳", gross: 94, hcp: 22.0, net: 72.0 },
+    { id: "73_5", rank: 5, name: "大住 一嘉", gross: 90, hcp: 17.0, net: 73.0 },
+    { id: "73_6", rank: 6, name: "村井 篤史", gross: 83, hcp: 9.0, net: 74.0 },
+    { id: "73_7", rank: 7, name: "倉田 義和", gross: 90, hcp: 16.0, net: 74.0 },
+    { id: "73_8", rank: 8, name: "根本 空", gross: 111, hcp: 36.0, net: 75.0 },
+    { id: "73_9", rank: 9, name: "庵原 京子", gross: 93, hcp: 17.0, net: 76.0 },
+    { id: "73_10", rank: 10, name: "大塚 直樹", gross: 94, hcp: 18.0, net: 76.0 },
+    { id: "73_11", rank: 11, name: "別宮 史隆", gross: 88, hcp: 11.0, net: 77.0 },
+    { id: "73_12", rank: 12, name: "吉田 裕稀也", gross: 91, hcp: 14.0, net: 77.0 },
+    { id: "73_13", rank: 13, name: "須藤 裕一", gross: 97, hcp: 20.0, net: 77.0 },
+    { id: "73_14", rank: 14, name: "蔵本 文敏", gross: 105, hcp: 28.0, net: 77.0 },
+    { id: "73_15", rank: 15, name: "上林 好一", gross: 107, hcp: 27.0, net: 80.0 },
+    { id: "73_16", rank: 16, name: "渋谷 容市", gross: 90, hcp: 9.0, net: 81.0 },
+    { id: "73_17", rank: 17, name: "矢口 修三", gross: 99, hcp: 18.0, net: 81.0 },
+    { id: "73_18", rank: 18, name: "森川 和人", gross: 109, hcp: 24.0, net: 85.0 },
+    { id: "73_19", rank: 19, name: "桧山 研二", gross: 107, hcp: 20.0, net: 87.0 }
+  ]
+},
+
+        {
+  id: "joy_swing_72",
+  name: "第72回　ジョイスイング倶楽部コンペ",
+  date: "2025-06-01",
+  course: "JGM笠間ゴルフクラブ",
+  players: [
+    { id: "72_1", rank: 1, name: "桧山 研二", gross: 95, hcp: 29.0, net: 66.0 },
+    { id: "72_2", rank: 2, name: "大住 一嘉", gross: 94, hcp: 24.0, net: 70.0 },
+    { id: "72_3", rank: 3, name: "森川 和人", gross: 107, hcp: 36.0, net: 71.0 },
+    { id: "72_4", rank: 4, name: "東平 安夫", gross: 85, hcp: 12.0, net: 73.0 },
+    { id: "72_5", rank: 5, name: "倉田 義和", gross: 89, hcp: 16.0, net: 73.0 },
+    { id: "72_6", rank: 6, name: "渋谷 容市", gross: 84, hcp: 9.0, net: 75.0 },
+    { id: "72_7", rank: 7, name: "大塚 直樹", gross: 93, hcp: 18.0, net: 75.0 },
+    { id: "72_8", rank: 8, name: "根本 空", gross: 111, hcp: 36.0, net: 75.0 },
+    { id: "72_9", rank: 9, name: "矢口 修三", gross: 95, hcp: 18.0, net: 77.0 },
+    { id: "72_10", rank: 10, name: "新川 未怜", gross: 85, hcp: 7.0, net: 78.0 },
+    { id: "72_11", rank: 11, name: "村井 篤史", gross: 87, hcp: 9.0, net: 78.0 },
+    { id: "72_12", rank: 12, name: "別宮 史隆", gross: 89, hcp: 11.0, net: 78.0 },
+    { id: "72_13", rank: 13, name: "村井 楽", gross: 98, hcp: 20.0, net: 78.0 },
+    { id: "72_14", rank: 14, name: "村井 敬明", gross: 101, hcp: 21.0, net: 80.0 },
+    { id: "72_15", rank: 15, name: "窪田 竜也", gross: 96, hcp: 15.0, net: 81.0 },
+    { id: "72_16", rank: 16, name: "須藤 裕一", gross: 101, hcp: 20.0, net: 81.0 },
+    { id: "72_17", rank: 17, name: "吉田 裕稀也", gross: 95, hcp: 13.0, net: 82.0 },
+    { id: "72_18", rank: 18, name: "上林 好一", gross: 108, hcp: 26.0, net: 82.0 },
+    { id: "72_19", rank: 19, name: "蔵本 文敏", gross: 111, hcp: 26.0, net: 85.0 },
+    { id: "72_20", rank: 20, name: "田中 瞳", gross: 108, hcp: 19.0, net: 89.0 }
+  ]
+},
+
+        {
+  id: "joy_swing_71",
+  name: "第71回　ジョイスイング倶楽部コンペ",
+  date: "2025-03-02",
+  course: "JGM笠間ゴルフクラブ",
+  players: [
+    { id: "71_1", rank: 1, name: "田中 瞳", gross: 94, hcp: 28.0, net: 66.0 },
+    { id: "71_2", rank: 2, name: "大塚 直樹", gross: 96, hcp: 23.0, net: 73.0 },
+    { id: "71_3", rank: 3, name: "村井 篤史", gross: 85, hcp: 9.0, net: 76.0 },
+    { id: "71_4", rank: 4, name: "望月 貴彦", gross: 89, hcp: 11.0, net: 78.0 },
+    { id: "71_5", rank: 5, name: "倉田 義和", gross: 95, hcp: 16.0, net: 79.0 },
+    { id: "71_6", rank: 6, name: "庵原 京子", gross: 96, hcp: 17.0, net: 79.0 },
+    { id: "71_7", rank: 7, name: "別宮 史隆", gross: 91, hcp: 11.0, net: 80.0 },
+    { id: "71_8", rank: 8, name: "上林 好一", gross: 106, hcp: 26.0, net: 80.0 },
+    { id: "71_9", rank: 9, name: "東平 安夫", gross: 92, hcp: 12.0, net: 80.0 },
+    { id: "71_10", rank: 10, name: "森川 和人", gross: 118, hcp: 36.0, net: 82.0 },
+    { id: "71_11", rank: 11, name: "桧山 研二", gross: 114, hcp: 29.0, net: 85.0 },
+    { id: "71_12", rank: 12, name: "新川 未怜", gross: 92, hcp: 7.0, net: 85.0 },
+    { id: "71_13", rank: 13, name: "渋谷 容市", gross: 93, hcp: 8.0, net: 85.0 },
+    { id: "71_14", rank: 14, name: "窪田 竜也", gross: 99, hcp: 14.0, net: 85.0 },
+    { id: "71_15", rank: 15, name: "須藤 裕一", gross: 104, hcp: 19.0, net: 85.0 },
+    { id: "71_16", rank: 16, name: "村井 敬明", gross: 108, hcp: 19.0, net: 89.0 },
+    { id: "71_17", rank: 17, name: "村井 楽", gross: 114, hcp: 17.0, net: 97.0 }
+  ]
+},
+
+        {
+  id: "joy_swing_70",
+  name: "第70回　ジョイスイング倶楽部コンペ",
+  date: "2024-12-01",
+  course: "JGM笠間ゴルフクラブ",
+  players: [
+    { id: "70_1", rank: 1, name: "窪田 竜也", gross: 91, hcp: 20.0, net: 71.0 },
+    { id: "70_2", rank: 2, name: "村井 楽", gross: 96, hcp: 25.0, net: 71.0 },
+    { id: "70_3", rank: 3, name: "森川 和人", gross: 108, hcp: 36.0, net: 72.0 },
+    { id: "70_4", rank: 4, name: "田中 瞳", gross: 102, hcp: 28.0, net: 74.0 },
+    { id: "70_5", rank: 5, name: "別宮 史隆", gross: 86, hcp: 11.0, net: 75.0 },
+    { id: "70_6", rank: 6, name: "大塚 直樹", gross: 99, hcp: 23.0, net: 76.0 },
+    { id: "70_7", rank: 7, name: "望月 貴彦", gross: 88, hcp: 11.0, net: 77.0 },
+    { id: "70_8", rank: 8, name: "庵原 京子", gross: 94, hcp: 17.0, net: 77.0 },
+    { id: "70_9", rank: 9, name: "東平 安夫", gross: 91, hcp: 12.0, net: 79.0 },
+    { id: "70_10", rank: 10, name: "野澤 文乃", gross: 99, hcp: 20.0, net: 79.0 },
+    { id: "70_11", rank: 11, name: "庵原 央", gross: 98, hcp: 17.0, net: 81.0 },
+    { id: "70_12", rank: 12, name: "上林 好一", gross: 107, hcp: 26.0, net: 81.0 },
+    { id: "70_13", rank: 13, name: "村井 敬明", gross: 101, hcp: 19.0, net: 82.0 },
+    { id: "70_14", rank: 14, name: "村井 篤史", gross: 92, hcp: 9.0, net: 83.0 },
+    { id: "70_15", rank: 15, name: "倉田 義和", gross: 99, hcp: 16.0, net: 83.0 },
+    { id: "70_16", rank: 16, name: "矢口 修三", gross: 101, hcp: 18.0, net: 83.0 },
+    { id: "70_17", rank: 17, name: "大住 一嘉", gross: 107, hcp: 24.0, net: 83.0 },
+    { id: "70_18", rank: 18, name: "渋谷 容市", gross: 92, hcp: 8.0, net: 84.0 },
+    { id: "70_19", rank: 19, name: "須藤 裕一", gross: 104, hcp: 18.0, net: 86.0 },
+    { id: "70_20", rank: 20, name: "吉田 裕稀也", gross: 100, hcp: 13.0, net: 87.0 },
+    { id: "70_21", rank: 21, name: "新居 正樹", gross: 108, hcp: 21.0, net: 87.0 },
+    { id: "70_22", rank: 22, name: "蔵本 文敏", gross: 115, hcp: 24.0, net: 91.0 },
+    { id: "70_23", rank: 23, name: "桧山 研二", gross: 117, hcp: 26.0, net: 91.0 }
+  ]
+},
+
+        {
+  id: "joy_swing_69",
+  name: "第69回　ジョイスイング倶楽部コンペ",
+  date: "2024-06-09",
+  course: "JGM笠間ゴルフクラブ",
+  players: [
+    { id: "69_1", rank: 1, name: "渋谷 容市", gross: 88, hcp: 10.0, net: 78.0 },
+    { id: "69_2", rank: 2, name: "吉田 裕稀也", gross: 94, hcp: 14.0, net: 80.0 },
+    { id: "69_3", rank: 3, name: "矢口 修三", gross: 98, hcp: 18.0, net: 80.0 },
+    { id: "69_4", rank: 4, name: "窪田 竜也", gross: 100, hcp: 20.0, net: 80.0 },
+    { id: "69_5", rank: 5, name: "須藤 裕一", gross: 99, hcp: 18.0, net: 81.0 },
+    { id: "69_6", rank: 6, name: "村井 楽", gross: 107, hcp: 25.0, net: 82.0 },
+    { id: "69_7", rank: 7, name: "村井 篤史", gross: 92, hcp: 9.0, net: 83.0 },
+    { id: "69_8", rank: 8, name: "大住 一嘉", gross: 108, hcp: 24.0, net: 84.0 },
+    { id: "69_9", rank: 9, name: "上林 好一", gross: 110, hcp: 26.0, net: 84.0 },
+    { id: "69_10", rank: 10, name: "望月 貴彦", gross: 96, hcp: 11.0, net: 85.0 },
+    { id: "69_11", rank: 11, name: "倉田 義和", gross: 103, hcp: 16.0, net: 87.0 },
+    { id: "69_12", rank: 12, name: "庵原 央", gross: 105, hcp: 16.0, net: 89.0 },
+    { id: "69_13", rank: 13, name: "庵原 京子", gross: 105, hcp: 16.0, net: 89.0 },
+    { id: "69_14", rank: 14, name: "新川 未怜", gross: 96, hcp: 6.0, net: 90.0 },
+    { id: "69_15", rank: 15, name: "村井 敬明", gross: 109, hcp: 17.0, net: 92.0 },
+    { id: "69_16", rank: 16, name: "田中 瞳", gross: 121, hcp: 25.0, net: 96.0 }
+  ]
+},
+
+{
+  id: "joy_swing_68",
+  name: "第68回　ジョイスイング倶楽部コンペ",
+  date: "2024-03-24",
+  course: "JGM笠間ゴルフクラブ",
+  players: [
+    { id: "68_1", rank: 1, name: "田中 瞳", gross: 104, hcp: 36.0, net: 68.0 },
+    { id: "68_2", rank: 2, name: "庵原 央", gross: 90, hcp: 18.0, net: 72.0 },
+    { id: "68_3", rank: 3, name: "吉田 裕稀也", gross: 88, hcp: 14.0, net: 74.0 },
+    { id: "68_4", rank: 4, name: "大住 一嘉", gross: 100, hcp: 24.0, net: 76.0 },
+    { id: "68_5", rank: 5, name: "窪田 竜也", gross: 97, hcp: 20.0, net: 77.0 },
+    { id: "68_6", rank: 6, name: "渋谷 容市", gross: 88, hcp: 10.0, net: 78.0 },
+    { id: "68_7", rank: 7, name: "倉田 義和", gross: 95, hcp: 16.0, net: 79.0 },
+    { id: "68_8", rank: 8, name: "別宮 史隆", gross: 91, hcp: 11.0, net: 80.0 },
+    { id: "68_9", rank: 9, name: "大塚 直樹", gross: 104, hcp: 23.0, net: 81.0 },
+    { id: "68_10", rank: 10, name: "庵原 京子", gross: 98, hcp: 16.0, net: 82.0 },
+    { id: "68_11", rank: 11, name: "村井 篤史", gross: 93, hcp: 9.0, net: 84.0 },
+    { id: "68_12", rank: 12, name: "望月 貴彦", gross: 96, hcp: 11.0, net: 85.0 },
+    { id: "68_13", rank: 13, name: "須藤 裕一", gross: 103, hcp: 18.0, net: 85.0 },
+    { id: "68_14", rank: 14, name: "新居 正樹", gross: 106, hcp: 21.0, net: 85.0 },
+    { id: "68_15", rank: 15, name: "村井 敬明", gross: 103, hcp: 17.0, net: 86.0 },
+    { id: "68_16", rank: 16, name: "上林 好一", gross: 112, hcp: 25.0, net: 87.0 },
+    { id: "68_17", rank: 17, name: "蔵本 文敏", gross: 113, hcp: 24.0, net: 89.0 },
+    { id: "68_18", rank: 18, name: "新居 雅子", gross: 125, hcp: 36.0, net: 89.0 },
+    { id: "68_19", rank: 19, name: "矢口 修三", gross: 108, hcp: 16.0, net: 92.0 },
+    { id: "68_20", rank: 20, name: "村井 楽", gross: 114, hcp: 22.0, net: 92.0 }
+  ]
+},
+        {
+  id: "joy_swing_67",
+  name: "第67回　ジョイスイング倶楽部コンペ",
+  date: "2023-12-03",
+  course: "JGM笠間ゴルフクラブ",
+  players: [
+    { id: "67_1", rank: 1, name: "矢口 修三", gross: 89, hcp: 23.0, net: 66.0 },
+    { id: "67_2", rank: 2, name: "吉田 裕稀也", gross: 88, hcp: 16.0, net: 72.0 },
+    { id: "67_3", rank: 3, name: "渋谷 容市", gross: 89, hcp: 10.0, net: 79.0 },
+    { id: "67_4", rank: 4, name: "大住 一嘉", gross: 103, hcp: 24.0, net: 79.0 },
+    { id: "67_5", rank: 5, name: "倉田 義和", gross: 96, hcp: 16.0, net: 80.0 },
+    { id: "67_6", rank: 6, name: "別宮 史隆", gross: 93, hcp: 11.0, net: 82.0 },
+    { id: "67_7", rank: 7, name: "東平 安夫", gross: 94, hcp: 12.0, net: 82.0 },
+    { id: "67_8", rank: 8, name: "村井 楽", gross: 104, hcp: 22.0, net: 82.0 },
+    { id: "67_9", rank: 9, name: "新川 未怜", gross: 89, hcp: 6.0, net: 83.0 },
+    { id: "67_10", rank: 10, name: "村井 篤史", gross: 92, hcp: 9.0, net: 83.0 },
+    { id: "67_11", rank: 11, name: "須藤 裕一", gross: 101, hcp: 18.0, net: 83.0 },
+    { id: "67_12", rank: 12, name: "新居 正樹", gross: 104, hcp: 21.0, net: 83.0 },
+    { id: "67_13", rank: 13, name: "上林 好一", gross: 108, hcp: 25.0, net: 83.0 },
+    { id: "67_14", rank: 14, name: "庵原 央", gross: 102, hcp: 18.0, net: 84.0 },
+    { id: "67_15", rank: 15, name: "窪田 竜也", gross: 103, hcp: 19.0, net: 84.0 },
+    { id: "67_16", rank: 16, name: "村井 敬明", gross: 101, hcp: 16.0, net: 85.0 },
+    { id: "67_17", rank: 17, name: "蔵本 文敏", gross: 110, hcp: 23.0, net: 87.0 },
+    { id: "67_18", rank: 18, name: "望月 貴彦", gross: 98, hcp: 9.0, net: 89.0 },
+    { id: "67_19", rank: 19, name: "大塚 直樹", gross: 112, hcp: 20.0, net: 92.0 }
+  ]
+},
+{
+  id: "joy_swing_66",
+  name: "第66回　ジョイスイング倶楽部コンペ",
+  date: "2023-09-03",
+  course: "JGM笠間ゴルフクラブ",
+  players: [
+    { id: "66_1", rank: 1, name: "新居 正樹", gross: 100, hcp: 26.0, net: 74.0 },
+    { id: "66_2", rank: 2, name: "倉田 義和", gross: 93, hcp: 18.0, net: 75.0 },
+    { id: "66_3", rank: 3, name: "庵原 央", gross: 94, hcp: 18.0, net: 76.0 },
+    { id: "66_4", rank: 4, name: "須藤 裕一", gross: 94, hcp: 18.0, net: 76.0 },
+    { id: "66_5", rank: 5, name: "大塚 直樹", gross: 96, hcp: 20.0, net: 76.0 },
+    { id: "66_6", rank: 6, name: "別宮 史隆", gross: 88, hcp: 11.0, net: 77.0 },
+    { id: "66_7", rank: 7, name: "庵原 京子", gross: 93, hcp: 16.0, net: 77.0 },
+    { id: "66_8", rank: 8, name: "矢口 修三", gross: 101, hcp: 23.0, net: 78.0 },
+    { id: "66_9", rank: 9, name: "村井 篤史", gross: 89, hcp: 9.0, net: 80.0 },
+    { id: "66_10", rank: 10, name: "窪田 竜也", gross: 99, hcp: 19.0, net: 80.0 },
+    { id: "66_11", rank: 11, name: "大住 一嘉", gross: 104, hcp: 24.0, net: 80.0 },
+    { id: "66_12", rank: 12, name: "渋谷 容市", gross: 92, hcp: 10.0, net: 82.0 },
+    { id: "66_13", rank: 13, name: "東平 安夫", gross: 94, hcp: 12.0, net: 82.0 },
+    { id: "66_14", rank: 14, name: "吉田 裕稀也", gross: 99, hcp: 15.0, net: 84.0 },
+    { id: "66_15", rank: 15, name: "村井 敬明", gross: 100, hcp: 15.0, net: 85.0 },
+    { id: "66_16", rank: 16, name: "蔵本 文敏", gross: 111, hcp: 22.0, net: 89.0 },
+    { id: "66_17", rank: 17, name: "望月 貴彦", gross: 97, hcp: 7.0, net: 90.0 },
+    { id: "66_18", rank: 18, name: "上林 好一", gross: 113, hcp: 22.0, net: 91.0 }
+  ]
+},
+        
+{
+  id: "joy_swing_65",
+  name: "第65回　ジョイスイング倶楽部コンペ",
+  date: "2023-06-04",
+  course: "JGM笠間ゴルフクラブ",
+  players: [
+    { id: "65_1", rank: 1, name: "別宮 史隆", gross: 82, hcp: 11.0, net: 71.0 },
+    { id: "65_2", rank: 2, name: "須藤 裕一", gross: 98, hcp: 27.0, net: 71.0 },
+    { id: "65_3", rank: 3, name: "上林 好一", gross: 103, hcp: 32.0, net: 71.0 },
+    { id: "65_4", rank: 4, name: "渋谷 容市", gross: 83, hcp: 10.0, net: 73.0 },
+    { id: "65_5", rank: 5, name: "大塚 直樹", gross: 93, hcp: 20.0, net: 73.0 },
+    { id: "65_6", rank: 6, name: "新居 正樹", gross: 100, hcp: 26.0, net: 74.0 },
+    { id: "65_7", rank: 7, name: "新居 雅子", gross: 111, hcp: 36.0, net: 75.0 },
+    { id: "65_8", rank: 8, name: "窪田 竜也", gross: 97, hcp: 19.0, net: 78.0 },
+    { id: "65_9", rank: 9, name: "吉田 裕稀也", gross: 94, hcp: 15.0, net: 79.0 },
+    { id: "65_10", rank: 10, name: "蔵本 文敏", gross: 101, hcp: 22.0, net: 79.0 },
+    { id: "65_11", rank: 11, name: "村井 篤史", gross: 89, hcp: 9.0, net: 80.0 },
+    { id: "65_12", rank: 12, name: "庵原 央", gross: 98, hcp: 18.0, net: 80.0 },
+    { id: "65_13", rank: 13, name: "矢口 修三", gross: 104, hcp: 23.0, net: 81.0 },
+    { id: "65_14", rank: 14, name: "新川 未怜", gross: 89, hcp: 6.0, net: 83.0 },
+    { id: "65_15", rank: 15, name: "村井 楽", gross: 106, hcp: 22.0, net: 84.0 },
+    { id: "65_16", rank: 16, name: "村井 敬明", gross: 99, hcp: 14.0, net: 85.0 },
+    { id: "65_17", rank: 17, name: "庵原 京子", gross: 100, hcp: 15.0, net: 85.0 },
+    { id: "65_18", rank: 18, name: "倉田 義和", gross: 103, hcp: 17.0, net: 86.0 },
+    { id: "65_19", rank: 19, name: "東平 安夫", gross: 98, hcp: 11.0, net: 87.0 },
+    { id: "65_20", rank: 20, name: "大内 いちる", gross: 123, hcp: 36.0, net: 87.0 }
+  ]
+},
+        {
+          id: "joy_swing_64",
+          name: "第64回　ジョイスイング倶楽部コンペ",
+          date: "2023-02-26",
+          course: "JGM笠間ゴルフクラブ",
+          players: [
+            { id: "64_1", rank: 1, name: "吉田 裕稀也", gross: 91, hcp: 19.0, net: 72.0 },
+            { id: "64_2", rank: 2, name: "大住 一嘉", gross: 99, hcp: 27.0, net: 72.0 },
+            { id: "64_3", rank: 3, name: "上林 好一", gross: 104, hcp: 32.0, net: 72.0 },
+            { id: "64_4", rank: 4, name: "東平 安夫", gross: 86, hcp: 11.0, net: 75.0 },
+            { id: "64_5", rank: 5, name: "村井 篤史", gross: 86, hcp: 9.0, net: 77.0 },
+            { id: "64_6", rank: 6, name: "村井 敬明", gross: 92, hcp: 14.0, net: 78.0 },
+            { id: "64_7", rank: 7, name: "渋谷 容市", gross: 89, hcp: 10.0, net: 79.0 },
+            { id: "64_8", rank: 8, name: "倉田 義和", gross: 98, hcp: 17.0, net: 81.0 },
+            { id: "64_9", rank: 9, name: "庵原 京子", gross: 97, hcp: 15.0, net: 82.0 },
+            { id: "64_10", rank: 10, name: "新居 正樹", gross: 109, hcp: 26.0, net: 83.0 },
+            { id: "64_11", rank: 11, name: "大塚 直樹", gross: 104, hcp: 19.0, net: 85.0 },
+            { id: "64_12", rank: 12, name: "庵原 央", gross: 103, hcp: 17.0, net: 86.0 },
+            { id: "64_13", rank: 13, name: "蔵本 文敏", gross: 110, hcp: 21.0, net: 89.0 },
+            { id: "64_14", rank: 14, name: "須藤 裕一", gross: 115, hcp: 26.0, net: 89.0 },
+            { id: "64_15", rank: 15, name: "窪田 竜也", gross: 107, hcp: 16.0, net: 91.0 }
+          ]
+        },
+        {
+          id: "joy_swing_63",
+          name: "第63回　ジョイスイング倶楽部コンペ",
+          date: "2022-09-04",
+          course: "JGM笠間ゴルフクラブ",
+          players: [
+            { id: "63_1", rank: 1, name: "倉田 義和", gross: 91, hcp: 22, net: 69 },
+            { id: "63_2", rank: 2, name: "大住 一嘉", gross: 100, hcp: 27, net: 73 },
+            { id: "63_3", rank: 3, name: "窪田 竜也", gross: 94, hcp: 20, net: 74 },
+            { id: "63_4", rank: 4, name: "新川 未怜", gross: 81, hcp: 6, net: 75 },
+            { id: "63_5", rank: 5, name: "東平 安夫", gross: 86, hcp: 11, net: 75 },
+            { id: "63_6", rank: 6, name: "上林 好一", gross: 104, hcp: 29, net: 75 },
+            { id: "63_7", rank: 7, name: "渋谷 容市", gross: 87, hcp: 10, net: 77 },
+            { id: "63_8", rank: 8, name: "村井 篤史", gross: 86, hcp: 8, net: 78 },
+            { id: "63_9", rank: 9, name: "庵原 京子", gross: 94, hcp: 15, net: 79 },
+            { id: "63_10", rank: 10, name: "大塚 直樹", gross: 100, hcp: 19, net: 81 },
+            { id: "63_11", rank: 11, name: "須藤 裕一", gross: 107, hcp: 25, net: 82 },
+            { id: "63_12", rank: 12, name: "別宮 史隆", gross: 93, hcp: 10, net: 83 },
+            { id: "63_13", rank: 13, name: "村井 敬明", gross: 96, hcp: 13, net: 83 },
+            { id: "63_14", rank: 14, name: "庵原 央", gross: 97, hcp: 14, net: 83 },
+            { id: "63_15", rank: 15, name: "蔵本 文敏", gross: 105, hcp: 18, net: 87 }
+          ]
+        },
+        {
+  id: "joy_swing_62",
+  name: "第62回　ジョイスイング倶楽部コンペ",
+  date: "2022-06-05",
+  course: "JGM笠間ゴルフクラブ",
+  players: [
+    { id: "62_1", rank: 1, name: "村井 敬明", gross: 90, hcp: 18.0, net: 72.0 },
+    { id: "62_2", rank: 2, name: "近野 未怜", gross: 84, hcp: 8.0, net: 76.0 },
+    { id: "62_3", rank: 3, name: "庵原 央", gross: 92, hcp: 15.0, net: 77.0 },
+    { id: "62_4", rank: 4, name: "別宮 史隆", gross: 89, hcp: 10.0, net: 79.0 },
+    { id: "62_5", rank: 5, name: "窪田 竜也", gross: 99, hcp: 20.0, net: 79.0 },
+    { id: "62_6", rank: 6, name: "村井 篤史", gross: 88, hcp: 8.0, net: 80.0 },
+    { id: "62_7", rank: 7, name: "蔵本 文敏", gross: 98, hcp: 18.0, net: 80.0 },
+    { id: "62_8", rank: 8, name: "倉田 義和", gross: 102, hcp: 22.0, net: 80.0 },
+    { id: "62_9", rank: 9, name: "杉野 秀行", gross: 91, hcp: 10.0, net: 81.0 },
+    { id: "62_10", rank: 10, name: "渋谷 容市", gross: 92, hcp: 10.0, net: 82.0 },
+    { id: "62_11", rank: 11, name: "庵原 京子", gross: 96, hcp: 14.0, net: 82.0 },
+    { id: "62_12", rank: 12, name: "大塚 直樹", gross: 100, hcp: 18.0, net: 82.0 },
+    { id: "62_13", rank: 13, name: "桧山 研二", gross: 108, hcp: 25.0, net: 83.0 },
+    { id: "62_14", rank: 14, name: "大住 一嘉", gross: 109, hcp: 26.0, net: 83.0 },
+    { id: "62_15", rank: 15, name: "上林 好一", gross: 115, hcp: 28.0, net: 87.0 }
+          ]
+        }
+      ];
+
+      const [tournaments, setTournaments] = useState(initialData);
+      const [selectedTournamentId, setSelectedTournamentId] = useState(initialData[0]?.id);
+      const [selectedPlayerName, setSelectedPlayerName] = useState(null);
+      const [activeTab, setActiveTab] = useState('tournament');
+
+      const selectedTournament = useMemo(() => 
+        tournaments.find(t => t.id === selectedTournamentId) || tournaments[0] || null
+      , [tournaments, selectedTournamentId]);
+
+      const stats = useMemo(() => {
+        let totalGross = 0;
+        let totalEntries = 0;
+        let bestScore = 999;
+        let bestPlayer = "-";
+        tournaments.forEach(t => {
+          t.players.forEach(p => {
+            totalGross += p.gross;
+            totalEntries++;
+            if (p.gross < bestScore) {
+              bestScore = p.gross;
+              bestPlayer = p.name;
+            }
+          });
+        });
+        return {
+          avgGross: totalEntries ? Math.round(totalGross / totalEntries) : 0,
+          bestScore: bestScore === 999 ? '-' : bestScore,
+          bestPlayer,
+          totalGames: tournaments.length
+        };
+      }, [tournaments]);
+
+      const allPlayersStats = useMemo(() => {
+        const playerMap = {};
+        const sortedTournaments = [...tournaments].sort((a, b) => new Date(b.date) - new Date(a.date));
+        sortedTournaments.forEach(t => {
+          t.players.forEach(p => {
+            if (!playerMap[p.name]) playerMap[p.name] = { name: p.name, history: [] };
+            playerMap[p.name].history.push({ date: t.date, gross: p.gross, hcp: p.hcp });
+          });
+        });
+        return Object.values(playerMap).map(player => {
+          const history = player.history;
+          const latest = history[0];
+          const previous = history[1];
+          const grossTotal = history.reduce((sum, h) => sum + h.gross, 0);
+          const best = Math.min(...history.map(h => h.gross));
+          let diff = null;
+          if (previous) diff = latest.gross - previous.gross;
+          return {
+            name: player.name,
+            latestHcp: latest.hcp,
+            latestDate: latest.date,
+            avgGross: Math.round(grossTotal / history.length),
+            bestGross: best,
+            prevDiff: diff,
+            playCount: history.length,
+            latestGross: latest.gross
+          };
+        }).sort((a, b) => a.avgGross - b.avgGross);
+      }, [tournaments]);
+
+      const ScoreDiff = ({ diff }) => {
+        if (diff === null) return <span className="text-slate-300 text-xs">-</span>;
+        if (diff === 0) return <span className="text-slate-400 text-xs flex items-center gap-0.5"><Minus size={12} /> ±0</span>;
+        if (diff < 0) return <span className="text-emerald-600 text-xs font-bold flex items-center gap-0.5"><ArrowDown size={12} /> {Math.abs(diff)}</span>;
+        return <span className="text-rose-500 text-xs font-bold flex items-center gap-0.5"><ArrowUp size={12} /> +{diff}</span>;
+      };
+
+      return (
+        <div className="min-h-screen bg-transparent text-slate-800 font-sans pb-20">
+          <header className="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
+            <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center text-white"><Trophy size={16} fill="currentColor" /></div>
+                <h1 className="font-bold text-xl tracking-tight text-slate-800">JoyswingLog</h1>
+              </div>
+            </div>
+          </header>
+
+          <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card className="p-4 flex flex-col items-center justify-center text-center"><span className="text-slate-400 text-xs font-medium uppercase mb-1">開催数</span><span className="text-2xl font-bold text-slate-700">{stats.totalGames}</span></Card>
+              <Card className="p-4 flex flex-col items-center justify-center text-center"><span className="text-slate-400 text-xs font-medium uppercase mb-1">全体平均グロス</span><span className="text-2xl font-bold text-emerald-600">{stats.avgGross}</span></Card>
+              <Card className="col-span-2 p-4 flex flex-col justify-center relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-3 opacity-10"><Trophy size={64} /></div>
+                <span className="text-slate-400 text-xs font-medium uppercase mb-1">歴代ベストグロス</span>
+                <div className="flex items-end gap-2"><span className="text-3xl font-bold text-amber-500">{stats.bestScore}</span><span className="text-sm text-slate-600 font-medium mb-1">by {stats.bestPlayer}</span></div>
+              </Card>
+            </div>
+
+            <div className="flex justify-center">
+              <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-200 inline-flex">
+                <button onClick={() => setActiveTab('tournament')} className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'tournament' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}><List size={18} /> 大会成績</button>
+                <button onClick={() => setActiveTab('players')} className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'players' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}><Users size={18} /> 参加者一覧</button>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {tournaments.length === 0 ? (
+                <div className="text-center py-20 bg-white rounded-xl border border-dashed border-slate-300">
+                  <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400"><Trophy size={32} /></div>
+                  <h3 className="text-lg font-bold text-slate-700 mb-2">データがありません</h3>
+                </div>
+              ) : activeTab === 'tournament' ? (
+                <>
+                  {selectedTournament && (
+                    <>
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in-up">
+                        <div className="relative w-full sm:w-auto min-w-[300px]">
+                          <label className="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">大会を選択</label>
+                          <div className="relative">
+                            <select value={selectedTournamentId || ''} onChange={(e) => setSelectedTournamentId(e.target.value)} className="appearance-none block w-full bg-white border border-slate-300 text-slate-700 py-3 px-4 pr-8 rounded-xl leading-tight focus:outline-none focus:bg-white focus:border-emerald-500 shadow-sm font-bold text-lg">
+                              {tournaments.map(t => <option key={t.id} value={t.id}>{t.date} | {t.name}</option>)}
+                            </select>
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500"><ChevronDown size={20} /></div>
+                          </div>
+                        </div>
+                        <div className="text-right hidden sm:block">
+                          <p className="text-sm text-slate-500"><span className="font-bold text-slate-800">{selectedTournament.players.length}名</span> 参加</p>
+                          <p className="text-xs text-slate-400 flex items-center justify-end gap-1"><MapPin size={12} />{selectedTournament.course || "コース情報なし"}</p>
+                        </div>
+                      </div>
+                      <Card className="h-full flex flex-col animate-fade-in-up">
+                        <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                          <div><h2 className="font-bold text-slate-700 flex items-center gap-2"><List size={18} /> 成績表</h2><p className="text-xs text-slate-500 sm:hidden mt-1">{selectedTournament.course}</p></div>
+                          <span className="text-xs text-slate-400">※名前をクリックして履歴を表示</span>
+                        </div>
+                        <div className="overflow-x-auto flex-1">
+                          <table className="w-full text-left text-sm whitespace-nowrap">
+                            <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
+                              <tr>
+                                <th className="px-6 py-3 font-medium w-16 text-center">順位</th>
+                                <th className="px-6 py-3 font-medium">氏名</th>
+                                <th className="px-6 py-3 font-medium text-right">グロス</th>
+                                <th className="px-6 py-3 font-medium text-right text-slate-400">HDCP</th>
+                                <th className="px-6 py-3 font-medium text-right font-bold text-slate-700">NET</th>
+                                <th className="px-4 py-3 font-medium w-10"></th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {selectedTournament.players.map((player) => (
+                                <tr key={player.id} onClick={() => setSelectedPlayerName(player.name)} className="hover:bg-emerald-50/50 transition-colors cursor-pointer group">
+                                  <td className="px-6 py-4 text-center">{player.rank === 1 ? <div className="w-8 h-8 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mx-auto font-bold shadow-sm">1</div> : player.rank === 2 ? <div className="w-8 h-8 bg-slate-100 text-slate-600 rounded-full flex items-center justify-center mx-auto font-bold">2</div> : player.rank === 3 ? <div className="w-8 h-8 bg-orange-50 text-orange-700 rounded-full flex items-center justify-center mx-auto font-bold">3</div> : <span className="text-slate-500 font-medium">{player.rank}</span>}</td>
+                                  <td className="px-6 py-4 font-medium text-slate-800 group-hover:text-emerald-700">{player.name}</td>
+                                  <td className="px-6 py-4 text-right tabular-nums text-slate-600 font-bold">{player.gross}</td>
+                                  <td className="px-6 py-4 text-right tabular-nums text-slate-400">{player.hcp}</td>
+                                  <td className="px-6 py-4 text-right tabular-nums font-bold text-emerald-700 text-lg">{player.net}</td>
+                                  <td className="px-4 py-4 text-center text-slate-300 group-hover:text-emerald-500"><BarChart2 size={16} /></td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </Card>
+                    </>
+                  )}
+                </>
+              ) : (
+                <Card className="h-full flex flex-col animate-fade-in-up">
+                  <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                    <h2 className="font-bold text-slate-700 flex items-center gap-2"><Users size={18} /> 全参加者一覧</h2>
+                    <span className="text-xs text-slate-400">※平均スコア順</span>
+                  </div>
+                  <div className="overflow-x-auto flex-1">
+                    <table className="w-full text-left text-sm whitespace-nowrap">
+                      <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
+                        <tr>
+                          <th className="px-6 py-3 font-medium">氏名</th>
+                          <th className="px-6 py-3 font-medium text-right text-slate-400">最新HCP</th>
+                          <th className="px-6 py-3 font-medium text-right">平均グロス</th>
+                          <th className="px-6 py-3 font-medium text-right text-slate-400">ベスト</th>
+                          <th className="px-6 py-3 font-medium text-right">前回比</th>
+                          <th className="px-6 py-3 font-medium text-center">回数</th>
+                          <th className="px-6 py-3 font-medium text-right text-slate-400">最新参加</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {allPlayersStats.map((player) => (
+                          <tr key={player.name} onClick={() => setSelectedPlayerName(player.name)} className="hover:bg-emerald-50/50 transition-colors cursor-pointer group">
+                            <td className="px-6 py-4 font-bold text-slate-800 group-hover:text-emerald-700 flex items-center gap-2"><User size={16} className="text-slate-300 group-hover:text-emerald-500" />{player.name}</td>
+                            <td className="px-6 py-4 text-right tabular-nums text-slate-400">{player.latestHcp}</td>
+                            <td className="px-6 py-4 text-right tabular-nums font-bold text-slate-700 text-base">{player.avgGross}</td>
+                            <td className="px-6 py-4 text-right tabular-nums text-amber-600 font-bold">{player.bestGross}</td>
+                            <td className="px-6 py-4 text-right flex justify-end"><ScoreDiff diff={player.prevDiff} /></td>
+                            <td className="px-6 py-4 text-center tabular-nums text-slate-500"><span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-bold">{player.playCount}</span></td>
+                            <td className="px-6 py-4 text-right text-xs text-slate-400 tabular-nums">{player.latestDate}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              )}
+            </div>
+          </main>
+          {selectedPlayerName && <PlayerStatsModal isOpen={!!selectedPlayerName} onClose={() => setSelectedPlayerName(null)} playerName={selectedPlayerName} allTournaments={tournaments} />}
+        </div>
+      );
+    }
+
+    // レンダリング
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
